@@ -1,0 +1,1 @@
+# Gerenciador_de_Apps_Mobile_versao_mobile
