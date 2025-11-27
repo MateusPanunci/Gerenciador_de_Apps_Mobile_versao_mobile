@@ -28,7 +28,7 @@ public class AppsMobileController {
 
 
     @GetMapping
-    public String listar(HttpSession session, Model model){
+    public ResponseEntity<List<AppMobile>> listar(HttpSession session){
         String nome = (String) session.getAttribute("filtro");
         System.out.println(nome);
 
@@ -38,15 +38,17 @@ public class AppsMobileController {
         } else {
             apps = service.listar();
         }
-        System.out.println(apps);
-        model.addAttribute("appsMobile", apps);
-        return "listar_CSS_Filtro"; //"listar"
-    }
+        if (apps != null) {
+            return ResponseEntity.ok(apps); // 200 OK
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT FOUND).body(null); // 404 NOT FOUND
+
+        }
 
     @GetMapping("/limpar")
-    public String limparFiltro(HttpSession session) {
+    public ResponseEntity<?> limparFiltro(HttpSession session) {
         session.setAttribute("filtro", null);;
-        return "redirect:/apps";
+        return ResponseEntity.ok;
     }
 //    @GetMapping("/buscar")
 //    public String buscar(@RequestParam("nome") String nome, Model model, RedirectAttributes ra){
@@ -61,93 +63,98 @@ public class AppsMobileController {
 //    }
 
     @PostMapping("/filtro")
-    public String aplicarFiltro(@RequestParam("nome") String nome, HttpSession session){
+    public ResponseEntity<?>  aplicarFiltro(@RequestParam("nome") String nome, HttpSession session){
           session.setAttribute("filtro", nome);
-          return "redirect:/apps";
+          return return ResponseEntity.status(HttpStatus.OK).body(nome);
     }
 
 
     @GetMapping("/novo")
-    public String abrirCadastro(Model model){
-        model.addAttribute("app", new AppMobile());
-        return "form_CSS"; //"form"
+    public ResponseEntity<AppMobile> abrirCadastro(){
+        AppMobile app = new AppMobile();
+        
+        return ResponseEntity.status(HttpStatus.OK).body(app); //"form"
     }
 
     @GetMapping("/editar/{id}")
-    public String abrirEdicao(@PathVariable Long id, Model model, RedirectAttributes ra) {
+    public ResponseEntity<?> abrirEdicao(@PathVariable Long id) {
         try {
-            model.addAttribute("app", service.buscar(id));
-            return "form_CSS"; //"form"
+            AppMobile app = service.buscar(id);
+            return ResponseEntity.status(HttpStatus.OK).body(app);
         } catch (RuntimeException e){
-            ra.addFlashAttribute("error", e.getMessage());
-            return "redirect:/apps";
-            /* Maneira que encontrei para burlar o problema de não mostrar o erro pelo
-            Binding Results
-            */
+            return responseEntity.status(HttpStatus.NOT FOUND).body(e.getMessage());
         }
     }
 
-    @PostMapping
-    public String cadastrar(@Valid @ModelAttribute AppMobile app,
-                            BindingResult erros,
-                            RedirectAttributes ra,
-                            Model model)
+    @PostMapping // Mantenha o mapeamento, assumindo que a classe tenha o path base
+    public ResponseEntity<?> cadastrarApi(
+        @Valid @RequestBody AppMobile app, // 1. Use @RequestBody para receber JSON
+        BindingResult erros) 
     {
+        // --- 2. Tratamento de Erros de Validação (400 Bad Request) ---
         if (erros.hasErrors()) {
-            model.addAttribute("app", app); //Não estava dando certo sem criar uma nova model
-            String error = "";
+            
+            // Cria um Map para retornar os erros em formato JSON
+            Map<String, String> errorMap = new HashMap<>();
 
-            //O th:error não estava funcionando também, achei essa maneira alternativa de informar o erro genericamente
+            // Coleta todos os erros de campo
             for (FieldError erro : erros.getFieldErrors()) {
-                error = "O campo \"" + erro.getField() + "\" foi preenchido incorretamente!";
-                break;
+                // O erro.getDefaultMessage() é o que deveria estar no JSON
+                errorMap.put(erro.getField(), erro.getDefaultMessage()); 
             }
-            ra.addFlashAttribute("error", error);
-            return "redirect:/apps/novo";
+
+            // Retorna o status HTTP 400 (Bad Request) com o mapa de erros JSON
+            return ResponseEntity.badRequest().body(errorMap);
         }
+
+        // --- 3. Lógica de Negócio (201 Created) ---
         try {
-            service.adicionar(app);
-            ra.addFlashAttribute("msg", "App Mobile cadastrado!");
-            return "redirect:/apps";
+            // Adiciona o App e o retorna (melhor prática para 201 Created)
+            AppMobile appSalvo = service.adicionar(app); 
+
+            // Retorna o status HTTP 201 (Created) e o objeto criado no corpo da resposta
+            return ResponseEntity.status(HttpStatus.CREATED).body(appSalvo);
+
         } catch (DataIntegrityViolationException e) {
-            ra.addFlashAttribute("error", "Já há um App cadastrado com o nome " + app.nome + "!");
-        return "redirect:/apps/novo";
-    }
+            // --- 4. Tratamento de Erros de Integridade (409 Conflict) ---
+
+            // Você pode usar o status 409 Conflict ou 400 Bad Request. 
+            // 409 é mais específico para conflito de recursos (nome duplicado)
+
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Já há um App cadastrado com o nome " + app.nome + "!");
+
+            return responseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        }
     }
 
+    
     @DeleteMapping("/{id}")
-    public String excluir(@PathVariable Long id,
-                          RedirectAttributes ra) {
+    public ResponseEntity<String> excluir(@PathVariable Long id) {
         service.remover(id);
-        ra.addFlashAttribute("msg", "App excluído!");
-        return "redirect:/apps";
+        return ResponseEntity.status(HttpStatus.OK).body("App Mobile removido!");
     }
 
+    
     @PutMapping("/{id}")
-    public String atualizar(@PathVariable Long id,
-                            @Valid @ModelAttribute AppMobile app,
-                            BindingResult erros,
-                            RedirectAttributes ra,
-                            Model model) {
-
+    public ResponseEntity<?> atualizar(@PathVariable Long id, @Valid @RequestBody AppMobile appAtualizado) {
         if (erros.hasErrors()) {
-            model.addAttribute("app", app);
-            String error = "";
+
+            // Cria um Map para retornar os erros em formato JSON
+            Map<String, String> errorMap = new HashMap<>();
+
+            // Coleta todos os erros de campo
             for (FieldError erro : erros.getFieldErrors()) {
-                error = "O campo \"" + erro.getField() + "\" foi preenchido incorretamente!";
-                break;
+                errorMap.put(erro.getField(), erro.getDefaultMessage()); 
             }
-            ra.addFlashAttribute("error", error);
-            return String.format("redirect:/apps/editar/%d",id);
+            return ResponseEntity.badRequest().body(errorMap);
         }
         try {
             service.atualizar(id, app);
-            ra.addFlashAttribute("msg", "App Mobile atualizado!");
+            return ResponseEntity.status(HttpStatus.OK).body("App Mobile atualizado!");
         }
         catch (RuntimeException e) {
-            ra.addFlashAttribute("error", e.getMessage());
-            //Ver para que serve
+            return ResponseEntity.status(HttpStatus.NOT FOUND).body(e.getMessage());
         }
-        return "redirect:/apps";
     }
 }

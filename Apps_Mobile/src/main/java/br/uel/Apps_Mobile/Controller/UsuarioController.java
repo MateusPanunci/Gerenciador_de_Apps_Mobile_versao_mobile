@@ -10,44 +10,28 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@Controller
+@RestController
 public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
     @PostMapping("/login")
-    public String autenticar(@RequestParam String email, @RequestParam String senha, HttpSession session, Model model) {
+    public ResponseEntity<String> autenticar(@RequestParam String email, @RequestParam String senha, HttpSession session) {
         Usuario usuario = usuarioService.autenticar(email, senha);
 
         if (usuario != null) {
             session.setAttribute("usuarioLogado", usuario);
-            return "redirect:/apps";
+            
+            return ResponseEntity.status(HttpStatus.OK).body("Usuário Logado!")
         } else {
-            model.addAttribute("error", "E-mail ou senha inválidos!");
-            return "index";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("E-mail ou senha inválidos!")
         }
 
     }
 
-    // @PostMapping("/cadastro")
-    // public String autenticar(@RequestParam String nome, @RequestParam String email, @RequestParam String senha, HttpSession session, Model model) {
-    //     Usuario usuario = usuarioService.autenticar(email, senha);
-
-    //     if (usuario != null) {
-    //         session.setAttribute("usuarioexiste", "Usuário Já Existe!");
-    //         return "redirect:/";
-    //     } else {
-    //         Usuario novo = Usuario
-    //         model.addAttribute("error", "E-mail ou senha inválidos!");
-    //         return "redirect:/";
-    //     }
-    // }
-
-
-
     @GetMapping("/logout")
-    public String logout(HttpSession session) {
+    public ResponseEntity<String> logout(HttpSession session) {
         session.invalidate();
-        return "redirect:/";
+        return ResponseEntity.status(HttpStatus.OK).body("Usuário Deslogado!")
     }
 }
