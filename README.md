@@ -39,7 +39,7 @@ O comando acima criou uma pasta nova. Você precisa entrar nela para trabalhar:
 cd NomeDoSeuApp
 ```
 
-## Passo 3: Instalar dependências
+### Passo 3: Instalar dependências
 
 ```
 npx expo install @react-navigation/native @react-navigation/bottom-tabs react-native-screens react-native-safe-area-context @react-native-picker/picker expo-crypto react-native-toast-message
