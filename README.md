@@ -39,7 +39,14 @@ O comando acima criou uma pasta nova. Você precisa entrar nela para trabalhar:
 cd NomeDoSeuApp
 ```
 
-### Passo 3: Rodar o Projeto
+## Passo 3: Instalar dependências
+
+```
+npx expo install @react-navigation/native @react-navigation/bottom-tabs react-native-screens react-native-safe-area-context @react-native-picker/picker expo-crypto react-native-toast-message
+```
+
+
+### Passo 4: Rodar o Projeto
 Agora, para ligar o servidor do Expo e gerar o QR Code:
 
 ```
@@ -47,8 +54,7 @@ npx expo start
 ```
 
 
-
-### Passo 4: Testar no Celular 
+### Passo 5: Testar no Celular 
 Baixe o aplicativo Expo Go na Play Store (Android) ou App Store (iOS).
 
 Abra a câmera do celular e aponte para o QR Code que apareceu no terminal
